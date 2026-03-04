@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Foothills Pharmacy – Inventory Check</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #f8f7f4; }
+  input, button { font-family: Georgia, serif; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  emailjs.init("S5coOqaqKY83DzWWa");
+</script>
+<script type="text/babel">
+
+const LOGO_SRC = "data:image/jpeg;base64,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";
+const SERVICE_ID  = "service_d4q95bj";
+const TEMPLATE_ID = "template_azt4kan";
+const RECIPIENTS  = ['chrischavarria@foothillspharmacy.com', 'aleaha@foothillspharmacy.com'];
+
+const MEDICATIONS = [
+  { name: "Metformin ER 500mg",      min: "20 Bottles", category: "Rx" },
+  { name: "Spironolactone 50mg",     min: "20 Bottles", category: "Rx" },
+  { name: "Bupropion SR 100mg",      min: "2 Bottles",  category: "Rx" },
+  { name: "Bupropion ER 150mg",      min: "4 Bottles",  category: "Rx" },
+  { name: "Bupropion ER 300mg",      min: "1 Bottle",   category: "Rx" },
+  { name: "Minoxidil 2.5mg",         min: "4 Bottles",  category: "Rx" },
+  { name: "Ondansetron 4mg",         min: "30 Bottles", category: "Rx" },
+  { name: "Dutasteride 0.5mg",       min: "2 Bottles",  category: "Rx" },
+  { name: "Famotidine 20mg",         min: "2 Bottles",  category: "Rx" },
+  { name: "Finasteride 1mg",         min: "2 Bottles",  category: "Rx" },
+  { name: "Topiramate 25mg",         min: "2 Bottles",  category: "Rx" },
+  { name: "Topiramate 50mg",         min: "2 Bottles",  category: "Rx" },
+  { name: "Topiramate 100mg",        min: "2 Bottles",  category: "Rx" },
+  { name: "Topiramate 200mg",        min: "2 Bottles",  category: "Rx" },
+  { name: "Vitamin B-6 100mg",       min: "2 Bottles",  category: "OTC" },
+  { name: "Vitamin B-12 1000mcg",    min: "3 Bottles",  category: "OTC" },
+  { name: "Vitamin C 1000mg",        min: "2 Bottles",  category: "OTC" },
+  { name: "Calcium Citrate 200mg",   min: "2 Bottles",  category: "OTC" },
+  { name: "Ferrous Sulfate 325mg",   min: "2 Bottles",  category: "OTC" },
+  { name: "Omega 3 1000mg",          min: "2 Bottles",  category: "OTC" },
+  { name: "Melatonin 3mg",           min: "2 Bottles",  category: "OTC" },
+  { name: "Magnesium Citrate 400mg", min: "2 Bottles",  category: "OTC" },
+  { name: "Vitamin D 1000IU",        min: "3 Bottles",  category: "OTC" },
+  { name: "Biotin 1000",             min: "10 Bottles", category: "OTC" },
+  { name: "Tretinoin 0.025 20g",     min: "3 Boxes",    category: "Topical" },
+  { name: "Tretinoin 0.025 45g",     min: "2 Boxes",    category: "Topical" },
+  { name: "Tretinoin 0.05 20g",      min: "5 Boxes",    category: "Topical" },
+  { name: "Tretinoin 0.05 45g",      min: "2 Boxes",    category: "Topical" },
+  { name: "Tretinoin 0.1 20g",       min: "7 Boxes",    category: "Topical" },
+  { name: "Tretinoin 0.1 45g",       min: "3 Boxes",    category: "Topical" },
+  { name: "Clindamycin Sol 30ml",    min: "2 Boxes",    category: "Topical" },
+  { name: "Clindamycin/Benz 25g",    min: "3 Boxes",    category: "Topical" },
+];
+
+const CATEGORIES = ["All", "Rx", "OTC", "Topical"];
+const CAT_COLORS = {
+  Rx:      { bg: "#fff0f3", border: "#ffc2cc", badge: "#ff4d6d", text: "#c9184a" },
+  OTC:     { bg: "#f0f7ff", border: "#bdd7ff", badge: "#4895ef", text: "#1e6fdb" },
+  Topical: { bg: "#f0fdf4", border: "#bbf7d0", badge: "#22c55e", text: "#15803d" },
+};
+
+function fmt(d) {
+  return d.toLocaleString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
+  });
+}
+
+function App() {
+  const [lowItems,   setLowItems]   = React.useState({});
+  const [notes,      setNotes]      = React.useState({});
+  const [filter,     setFilter]     = React.useState("All");
+  const [search,     setSearch]     = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitted,  setSubmitted]  = React.useState(false);
+  const [submitTime, setSubmitTime] = React.useState(null);
+  const [error,      setError]      = React.useState(null);
+  const [checkedBy,  setCheckedBy]  = React.useState("");
+  const [now,        setNow]        = React.useState(new Date());
+
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const toggleLow = (name) => setLowItems(p => ({ ...p, [name]: !p[name] }));
+  const lowCount  = Object.values(lowItems).filter(Boolean).length;
+  const filtered  = MEDICATIONS.filter(m =>
+    (filter === "All" || m.category === filter) &&
+    m.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleSubmit = async () => {
+    const lowList = MEDICATIONS.filter(m => lowItems[m.name]);
+    if (!lowList.length) { setError("Please mark at least one item as low before submitting."); return; }
+    setError(null);
+    setSubmitting(true);
+    const ts = new Date();
+
+    const itemLines = lowList
+      .map(m => `  • ${m.name} (Min: ${m.min})${notes[m.name] ? " — " + notes[m.name] : ""}`)
+      .join("\n");
+
+    const message =
+      `FOOTHILLS PHARMACY — LOW INVENTORY ALERT\n` +
+      `==========================================\n` +
+      `Submitted by: ${checkedBy || "Staff"}\n` +
+      `Date & Time:  ${fmt(ts)}\n\n` +
+      `LOW STOCK ITEMS (${lowList.length} item${lowList.length !== 1 ? "s" : ""}):\n\n` +
+      itemLines + "\n\n" +
+      `Please review and place orders as needed.\n` +
+      `— Foothills Pharmacy Inventory System`;
+
+    const subject = `⚠️ Low Inventory Alert – ${lowList.length} Item${lowList.length !== 1 ? "s" : ""} Need Ordering`;
+
+    try {
+      // Send to both recipients
+      await Promise.all(RECIPIENTS.map(email =>
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+          to_email: email,
+          subject:  subject,
+          message:  message,
+        })
+      ));
+      setSubmitTime(ts);
+      setSubmitted(true);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to send notification. Please check your internet connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setLowItems({}); setNotes({}); setSubmitted(false);
+    setSubmitTime(null); setError(null); setCheckedBy("");
+  };
+
+  /* ── SUCCESS SCREEN ── */
+  if (submitted) {
+    const lowList = MEDICATIONS.filter(m => lowItems[m.name]);
+    return (
+      <div style={{fontFamily:"Georgia,serif",background:"#f8f7f4",minHeight:"100vh",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px"}}>
+        <div style={{maxWidth:580,width:"100%",background:"white",borderRadius:20,padding:"40px 36px",boxShadow:"0 8px 40px rgba(0,0,0,0.10)",textAlign:"center"}}>
+          <div style={{background:"#f0f0f0",borderRadius:12,padding:"8px 16px",display:"inline-flex",alignItems:"center",marginBottom:24}}>
+            <img src={LOGO_SRC} alt="ScriptStation" style={{height:30,objectFit:"contain",display:"block"}} />
+          </div>
+          <div style={{width:68,height:68,borderRadius:"50%",background:"#f0fdf4",border:"2px solid #22c55e",color:"#22c55e",fontSize:30,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>✓</div>
+          <h2 style={{margin:"0 0 6px",fontSize:24,color:"#1a1a1a",fontWeight:800}}>Inventory Submitted!</h2>
+          <p style={{margin:"0 0 4px",fontSize:13,color:"#888"}}> {fmt(submitTime)}</p>
+          {checkedBy && <p style={{margin:"6px 0 0",fontSize:14,color:"#555"}}>Checked by: <strong>{checkedBy}</strong></p>}
+          <div style={{height:1,background:"#f0f0f0",margin:"20px 0 16px"}} />
+          <p style={{fontSize:12,color:"#aaa",marginBottom:10,textTransform:"uppercase",letterSpacing:.8}}>Email sent to:</p>
+          <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
+            {RECIPIENTS.map(e => <span key={e} style={{background:"#f0f7ff",color:"#1e6fdb",border:"1px solid #bdd7ff",borderRadius:20,padding:"4px 12px",fontSize:12}}>{e}</span>)}
+          </div>
+          <div style={{height:1,background:"#f0f0f0",margin:"0 0 16px"}} />
+          <p style={{fontSize:12,color:"#aaa",marginBottom:10,textTransform:"uppercase",letterSpacing:.8}}>{lowList.length} item{lowList.length!==1?"s":""} flagged as low:</p>
+          <div style={{display:"flex",flexDirection:"column",gap:6,textAlign:"left",margin:"0 0 28px"}}>
+            {lowList.map(m => (
+              <div key={m.name} style={{display:"flex",justifyContent:"space-between",background:"#fafafa",padding:"8px 12px",borderRadius:8,borderLeft:"3px solid "+CAT_COLORS[m.category].badge}}>
+                <span style={{fontSize:13,fontWeight:600}}>{m.name}</span>
+                <span style={{fontSize:12,color:CAT_COLORS[m.category].text}}>Min: {m.min}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={handleReset} style={{background:"#1a3a5c",color:"white",border:"none",borderRadius:10,padding:"12px 32px",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif"}}>
+            Start New Check
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── MAIN SCREEN ── */
+  return (
+    <div style={{fontFamily:"Georgia,serif",background:"#f8f7f4",minHeight:"100vh",paddingBottom:90}}>
+
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#1a3a5c,#0f2540)",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}>
+        <div style={{display:"flex",alignItems:"center"}}>
+          <div style={{background:"white",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center"}}>
+            <img src={LOGO_SRC} alt="ScriptStation" style={{height:30,objectFit:"contain",display:"block"}} />
+          </div>
+          <div style={{width:1,height:34,background:"rgba(255,255,255,0.25)",margin:"0 16px"}} />
+          <div>
+            <div style={{fontSize:20,fontWeight:700,letterSpacing:"-.3px",color:"white"}}>Foothills Pharmacy</div>
+            <div style={{fontSize:12,opacity:.65,letterSpacing:".5px",marginTop:2,color:"white"}}>Tablet &amp; OTC Inventory Check</div>
+          </div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:11,opacity:.65,marginBottom:2,color:"white"}}> {now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</div>
+          <div style={{fontSize:19,fontFamily:"monospace",fontWeight:700,letterSpacing:1,color:"white"}}> {now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</div>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{background:"white",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #e8e4de",flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:18}}>👤</span>
+          <input value={checkedBy} onChange={e=>setCheckedBy(e.target.value)} placeholder="Your name (optional)"
+            style={{border:"1px solid #ddd",borderRadius:8,padding:"6px 12px",fontSize:14,outline:"none",minWidth:200,fontFamily:"Georgia,serif"}} />
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          {[["Total",MEDICATIONS.length,"#1a1a1a","#f0f0f0"],
+            ["Low",lowCount,lowCount>0?"#ff4d6d":"#22c55e",lowCount>0?"#fff0f3":"#f0fdf4"],
+            ["OK",MEDICATIONS.length-lowCount,"#1a1a1a","#f0f0f0"]
+          ].map(([l,v,c,bg]) => (
+            <div key={l} style={{background:bg,borderRadius:10,padding:"6px 16px",textAlign:"center",minWidth:56}}>
+              <div style={{fontSize:22,fontWeight:800,lineHeight:1.1,color:c}}>{v}</div>
+              <div style={{fontSize:10,color:"#888",textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Search & Filter */}
+      <div style={{padding:"14px 24px",background:"#fdfcfa",borderBottom:"1px solid #e8e4de"}}>
+        <div style={{display:"flex",alignItems:"center",background:"white",border:"1px solid #ddd",borderRadius:10,padding:"6px 14px",marginBottom:10}}>
+          <span style={{marginRight:8}}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search medications..."
+            style={{border:"none",outline:"none",fontSize:14,width:"100%",background:"transparent",fontFamily:"Georgia,serif"}} />
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {CATEGORIES.map(cat => (
+            <button key={cat} onClick={()=>setFilter(cat)} style={{
+              padding:"5px 16px",borderRadius:20,fontFamily:"Georgia,serif",
+              border:"1px solid "+(filter===cat?"#1a3a5c":"#ddd"),
+              background:filter===cat?"#1a3a5c":"white",
+              color:filter===cat?"white":"#555",
+              fontSize:13,cursor:"pointer",fontWeight:filter===cat?600:400
+            }}>{cat}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Medication list */}
+      <div style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.length===0 && <div style={{textAlign:"center",padding:40,color:"#aaa"}}>No medications match your search.</div>}
+        {filtered.map(med => {
+          const isLow  = !!lowItems[med.name];
+          const colors = CAT_COLORS[med.category];
+          return (
+            <div key={med.name} style={{
+              background:isLow?"#fff8f8":"white",borderRadius:12,padding:"14px 16px",
+              border:"1px solid "+(isLow?"#ffc2cc":"#e8e4de"),
+              borderLeft:"4px solid "+(isLow?"#ff4d6d":colors.border),
+              boxShadow:isLow?"0 2px 8px rgba(255,77,109,.10)":"0 1px 3px rgba(0,0,0,.04)"
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <button onClick={()=>toggleLow(med.name)} style={{
+                  width:28,height:28,borderRadius:8,
+                  border:"2px solid "+(isLow?"#ff4d6d":"#ddd"),
+                  background:isLow?"#ff4d6d":"white",color:isLow?"white":"#ff4d6d",
+                  cursor:"pointer",fontSize:14,fontWeight:700,
+                  display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0
+                }}>{isLow?"✕":""}</button>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15,fontWeight:600,color:"#1a1a1a",marginBottom:4}}>{med.name}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,fontWeight:600,fontFamily:"monospace",
+                      background:colors.bg,color:colors.text,border:"1px solid "+colors.border}}>{med.category}</span>
+                    <span style={{fontSize:12,color:"#777"}}>Min: <strong>{med.min}</strong></span>
+                  </div>
+                </div>
+                {isLow && <span style={{background:"#ff4d6d",color:"white",fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:1,flexShrink:0}}>LOW</span>}
+              </div>
+              {isLow && (
+                <div style={{marginTop:10,paddingLeft:40}}>
+                  <input value={notes[med.name]||""} onChange={e=>setNotes(p=>({...p,[med.name]:e.target.value}))}
+                    placeholder="Add a note (optional)..."
+                    style={{width:"calc(100% - 16px)",border:"1px solid #ffc2cc",borderRadius:8,padding:"6px 10px",
+                      fontSize:13,outline:"none",background:"#fff8f8",color:"#555",fontFamily:"Georgia,serif"}} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Submit bar */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:"1px solid #e8e4de",
+        padding:"12px 24px",boxShadow:"0 -4px 20px rgba(0,0,0,0.08)",zIndex:100}}>
+        {error && <div style={{background:"#fff0f3",border:"1px solid #ffc2cc",color:"#c9184a",borderRadius:8,padding:"8px 14px",marginBottom:10,fontSize:13}}>⚠ {error}</div>}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:14}}>
+            {lowCount>0
+              ? <span style={{color:"#ff4d6d",fontWeight:600}}>⚠ {lowCount} item{lowCount!==1?"s":""} marked low</span>
+              : <span style={{color:"#22c55e",fontWeight:600}}>✓ No low items marked</span>}
+          </div>
+          <button onClick={handleSubmit} disabled={submitting} style={{
+            background:"linear-gradient(135deg,#1a3a5c,#0f2540)",color:"white",border:"none",
+            borderRadius:10,padding:"11px 26px",fontSize:15,fontWeight:700,fontFamily:"Georgia,serif",
+            cursor:submitting?"not-allowed":"pointer",opacity:submitting?0.65:1,
+            boxShadow:"0 3px 12px rgba(26,58,92,.35)",display:"flex",alignItems:"center",gap:8
+          }}>
+            {submitting
+              ? <><span style={{display:"inline-block",width:15,height:15,border:"2px solid rgba(255,255,255,.35)",borderTopColor:"white",borderRadius:"50%",animation:"spin .7s linear infinite"}} /> Sending…</>
+              : "📧 Submit & Notify"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
