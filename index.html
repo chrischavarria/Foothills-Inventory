@@ -10,8 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Georgia, serif; background: #f8f7f4; }
-  input, button { font-family: Georgia, serif; }
+  body { font-family: Georgia, serif; background: #f8f6f2; }
+  input, button, select { font-family: Georgia, serif; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -26,8 +26,9 @@ const LOGO_SRC = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1B
 const SERVICE_ID  = "service_d4q95bj";
 const TEMPLATE_ID = "template_azt4kan";
 const RECIPIENTS  = ['chrischavarria@foothillspharmacy.com', 'aleaha@foothillspharmacy.com'];
+const MANAGE_PIN  = "1008";
 
-const MEDICATIONS = [
+const INITIAL_MEDICATIONS = [
   { name: "Metformin ER 500mg",      min: "20 Bottles", category: "Rx" },
   { name: "Spironolactone 50mg",     min: "20 Bottles", category: "Rx" },
   { name: "Bupropion SR 100mg",      min: "2 Bottles",  category: "Rx" },
@@ -64,9 +65,9 @@ const MEDICATIONS = [
 
 const CATEGORIES = ["All", "Rx", "OTC", "Topical"];
 const CAT_COLORS = {
-  Rx:      { bg: "#fff0f3", border: "#ffc2cc", badge: "#ff4d6d", text: "#c9184a" },
-  OTC:     { bg: "#f0f7ff", border: "#bdd7ff", badge: "#4895ef", text: "#1e6fdb" },
-  Topical: { bg: "#f0fdf4", border: "#bbf7d0", badge: "#22c55e", text: "#15803d" },
+  Rx:      { bg: "#fff0f3", border: "#ffc2cc", badge: "#e05070", text: "#c9184a" },
+  OTC:     { bg: "#edf4e4", border: "#ccddaf", badge: "#6b9071", text: "#3d6645" },
+  Topical: { bg: "#f4f8ef", border: "#b8d4a0", badge: "#8aad78", text: "#527a48" },
 };
 
 function fmt(d) {
@@ -77,31 +78,86 @@ function fmt(d) {
 }
 
 function App() {
-  const [lowItems,   setLowItems]   = React.useState({});
-  const [notes,      setNotes]      = React.useState({});
-  const [filter,     setFilter]     = React.useState("All");
-  const [search,     setSearch]     = React.useState("");
-  const [submitting, setSubmitting] = React.useState(false);
-  const [submitted,  setSubmitted]  = React.useState(false);
-  const [submitTime, setSubmitTime] = React.useState(null);
-  const [error,      setError]      = React.useState(null);
-  const [checkedBy,  setCheckedBy]  = React.useState("");
-  const [now,        setNow]        = React.useState(new Date());
+  const [medications,  setMedications]  = React.useState(INITIAL_MEDICATIONS);
+  const [lowItems,     setLowItems]     = React.useState({});
+  const [notes,        setNotes]        = React.useState({});
+  const [filter,       setFilter]       = React.useState("All");
+  const [search,       setSearch]       = React.useState("");
+  const [submitting,   setSubmitting]   = React.useState(false);
+  const [submitted,    setSubmitted]    = React.useState(false);
+  const [submitTime,   setSubmitTime]   = React.useState(null);
+  const [error,        setError]        = React.useState(null);
+  const [checkedBy,    setCheckedBy]    = React.useState("");
+  const [now,          setNow]          = React.useState(new Date());
+
+  // Manage mode state
+  const [showPinModal, setShowPinModal] = React.useState(false);
+  const [manageMode,   setManageMode]   = React.useState(false);
+  const [pinInput,     setPinInput]     = React.useState("");
+  const [pinError,     setPinError]     = React.useState(false);
+
+  // Add item form state
+  const [newName,     setNewName]     = React.useState("");
+  const [newMin,      setNewMin]      = React.useState("");
+  const [newCategory, setNewCategory] = React.useState("Rx");
+  const [addError,    setAddError]    = React.useState("");
 
   React.useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // Focus PIN input when modal opens
+  const pinRef = React.useRef(null);
+  React.useEffect(() => {
+    if (showPinModal && pinRef.current) pinRef.current.focus();
+  }, [showPinModal]);
+
   const toggleLow = (name) => setLowItems(p => ({ ...p, [name]: !p[name] }));
   const lowCount  = Object.values(lowItems).filter(Boolean).length;
-  const filtered  = MEDICATIONS.filter(m =>
+  const filtered  = medications.filter(m =>
     (filter === "All" || m.category === filter) &&
     m.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  /* ── PIN VERIFY ── */
+  const verifyPin = () => {
+    if (pinInput === MANAGE_PIN) {
+      setManageMode(true);
+      setShowPinModal(false);
+      setPinInput("");
+      setPinError(false);
+    } else {
+      setPinError(true);
+      setPinInput("");
+    }
+  };
+
+  const exitManageMode = () => {
+    setManageMode(false);
+    setNewName(""); setNewMin(""); setNewCategory("Rx"); setAddError("");
+  };
+
+  /* ── ADD ITEM ── */
+  const addItem = () => {
+    if (!newName.trim())  { setAddError("Item name is required."); return; }
+    if (!newMin.trim())   { setAddError("Minimum quantity is required."); return; }
+    const duplicate = medications.some(m => m.name.toLowerCase() === newName.trim().toLowerCase());
+    if (duplicate) { setAddError("An item with this name already exists."); return; }
+    setMedications(prev => [...prev, { name: newName.trim(), min: newMin.trim(), category: newCategory }]);
+    setNewName(""); setNewMin(""); setNewCategory("Rx"); setAddError("");
+  };
+
+  /* ── REMOVE ITEM ── */
+  const removeItem = (name) => {
+    setMedications(prev => prev.filter(m => m.name !== name));
+    setLowItems(p => { const n = {...p}; delete n[name]; return n; });
+    setNotes(p   => { const n = {...p}; delete n[name]; return n; });
+  };
+
+  /* ── SUBMIT ── */
   const handleSubmit = async () => {
-    const lowList = MEDICATIONS.filter(m => lowItems[m.name]);
+    const lowList = medications.filter(m => lowItems[m.name]);
     if (!lowList.length) { setError("Please mark at least one item as low before submitting."); return; }
     setError(null);
     setSubmitting(true);
@@ -124,7 +180,6 @@ function App() {
     const subject = `⚠️ Low Inventory Alert – ${lowList.length} Item${lowList.length !== 1 ? "s" : ""} Need Ordering`;
 
     try {
-      // Send to both recipients
       await Promise.all(RECIPIENTS.map(email =>
         emailjs.send(SERVICE_ID, TEMPLATE_ID, {
           to_email: email,
@@ -149,33 +204,33 @@ function App() {
 
   /* ── SUCCESS SCREEN ── */
   if (submitted) {
-    const lowList = MEDICATIONS.filter(m => lowItems[m.name]);
+    const lowList = medications.filter(m => lowItems[m.name]);
     return (
-      <div style={{fontFamily:"Georgia,serif",background:"#f8f7f4",minHeight:"100vh",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px"}}>
+      <div style={{fontFamily:"Georgia,serif",background:"#f8f6f2",minHeight:"100vh",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 16px"}}>
         <div style={{maxWidth:580,width:"100%",background:"white",borderRadius:20,padding:"40px 36px",boxShadow:"0 8px 40px rgba(0,0,0,0.10)",textAlign:"center"}}>
-          <div style={{background:"#f0f0f0",borderRadius:12,padding:"8px 16px",display:"inline-flex",alignItems:"center",marginBottom:24}}>
+          <div style={{background:"#f8f6f2",borderRadius:12,padding:"8px 16px",display:"inline-flex",alignItems:"center",marginBottom:24}}>
             <img src={LOGO_SRC} alt="ScriptStation" style={{height:30,objectFit:"contain",display:"block"}} />
           </div>
-          <div style={{width:68,height:68,borderRadius:"50%",background:"#f0fdf4",border:"2px solid #22c55e",color:"#22c55e",fontSize:30,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>✓</div>
-          <h2 style={{margin:"0 0 6px",fontSize:24,color:"#1a1a1a",fontWeight:800}}>Inventory Submitted!</h2>
-          <p style={{margin:"0 0 4px",fontSize:13,color:"#888"}}> {fmt(submitTime)}</p>
+          <div style={{width:68,height:68,borderRadius:"50%",background:"#edf4e4",border:"2px solid #6b9071",color:"#6b9071",fontSize:30,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>✓</div>
+          <h2 style={{margin:"0 0 6px",fontSize:24,color:"#343434",fontWeight:800}}>Inventory Submitted!</h2>
+          <p style={{margin:"0 0 4px",fontSize:13,color:"#888"}}>{fmt(submitTime)}</p>
           {checkedBy && <p style={{margin:"6px 0 0",fontSize:14,color:"#555"}}>Checked by: <strong>{checkedBy}</strong></p>}
           <div style={{height:1,background:"#f0f0f0",margin:"20px 0 16px"}} />
           <p style={{fontSize:12,color:"#aaa",marginBottom:10,textTransform:"uppercase",letterSpacing:.8}}>Email sent to:</p>
           <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
-            {RECIPIENTS.map(e => <span key={e} style={{background:"#f0f7ff",color:"#1e6fdb",border:"1px solid #bdd7ff",borderRadius:20,padding:"4px 12px",fontSize:12}}>{e}</span>)}
+            {RECIPIENTS.map(e => <span key={e} style={{background:"#edf4e4",color:"#3d6645",border:"1px solid #ccddaf",borderRadius:20,padding:"4px 12px",fontSize:12}}>{e}</span>)}
           </div>
           <div style={{height:1,background:"#f0f0f0",margin:"0 0 16px"}} />
           <p style={{fontSize:12,color:"#aaa",marginBottom:10,textTransform:"uppercase",letterSpacing:.8}}>{lowList.length} item{lowList.length!==1?"s":""} flagged as low:</p>
           <div style={{display:"flex",flexDirection:"column",gap:6,textAlign:"left",margin:"0 0 28px"}}>
             {lowList.map(m => (
-              <div key={m.name} style={{display:"flex",justifyContent:"space-between",background:"#fafafa",padding:"8px 12px",borderRadius:8,borderLeft:"3px solid "+CAT_COLORS[m.category].badge}}>
-                <span style={{fontSize:13,fontWeight:600}}>{m.name}</span>
+              <div key={m.name} style={{display:"flex",justifyContent:"space-between",background:"#fafaf8",padding:"8px 12px",borderRadius:8,borderLeft:"3px solid "+CAT_COLORS[m.category].badge}}>
+                <span style={{fontSize:13,fontWeight:600,color:"#343434"}}>{m.name}</span>
                 <span style={{fontSize:12,color:CAT_COLORS[m.category].text}}>Min: {m.min}</span>
               </div>
             ))}
           </div>
-          <button onClick={handleReset} style={{background:"#1a3a5c",color:"white",border:"none",borderRadius:10,padding:"12px 32px",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif"}}>
+          <button onClick={handleReset} style={{background:"#6b9071",color:"white",border:"none",borderRadius:10,padding:"12px 32px",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif"}}>
             Start New Check
           </button>
         </div>
@@ -185,10 +240,41 @@ function App() {
 
   /* ── MAIN SCREEN ── */
   return (
-    <div style={{fontFamily:"Georgia,serif",background:"#f8f7f4",minHeight:"100vh",paddingBottom:90}}>
+    <div style={{fontFamily:"Georgia,serif",background:"#f8f6f2",minHeight:"100vh",paddingBottom:90}}>
+
+      {/* PIN Modal */}
+      {showPinModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(52,52,52,0.55)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",borderRadius:20,padding:"36px 32px",maxWidth:340,width:"100%",boxShadow:"0 12px 50px rgba(0,0,0,0.18)",textAlign:"center"}}>
+            <div style={{width:52,height:52,borderRadius:"50%",background:"#edf4e4",border:"2px solid #ccddaf",fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>🔒</div>
+            <h3 style={{fontSize:18,fontWeight:800,color:"#343434",marginBottom:6}}>Manage Items</h3>
+            <p style={{fontSize:13,color:"#888",marginBottom:20}}>Enter PIN to add or remove medications.</p>
+            <input
+              ref={pinRef}
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={pinInput}
+              onChange={e => { setPinInput(e.target.value); setPinError(false); }}
+              onKeyDown={e => e.key === "Enter" && verifyPin()}
+              placeholder="Enter PIN"
+              style={{width:"100%",border:"2px solid "+(pinError?"#e05070":"#ccddaf"),borderRadius:10,padding:"10px 14px",fontSize:18,textAlign:"center",letterSpacing:6,outline:"none",marginBottom:pinError?6:16,fontFamily:"monospace",color:"#343434"}}
+            />
+            {pinError && <p style={{fontSize:12,color:"#e05070",marginBottom:12}}>Incorrect PIN. Please try again.</p>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{ setShowPinModal(false); setPinInput(""); setPinError(false); }} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid #ddd",background:"white",color:"#555",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"Georgia,serif"}}>
+                Cancel
+              </button>
+              <button onClick={verifyPin} style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:"#343434",color:"white",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif"}}>
+                Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#1a3a5c,#0f2540)",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}>
+      <div style={{background:"#343434",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}>
         <div style={{display:"flex",alignItems:"center"}}>
           <div style={{background:"white",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center"}}>
             <img src={LOGO_SRC} alt="ScriptStation" style={{height:30,objectFit:"contain",display:"block"}} />
@@ -199,25 +285,40 @@ function App() {
             <div style={{fontSize:12,opacity:.65,letterSpacing:".5px",marginTop:2,color:"white"}}>Tablet &amp; OTC Inventory Check</div>
           </div>
         </div>
-        <div style={{textAlign:"right"}}>
-          <div style={{fontSize:11,opacity:.65,marginBottom:2,color:"white"}}> {now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</div>
-          <div style={{fontSize:19,fontFamily:"monospace",fontWeight:700,letterSpacing:1,color:"white"}}> {now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</div>
+        <div style={{display:"flex",alignItems:"center",gap:16}}>
+          {manageMode
+            ? <button onClick={exitManageMode} style={{background:"#6b9071",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif",letterSpacing:.3}}>✓ Done Managing</button>
+            : <button onClick={()=>setShowPinModal(true)} style={{background:"rgba(255,255,255,0.12)",color:"white",border:"1px solid rgba(255,255,255,0.25)",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"Georgia,serif"}}>⚙ Manage Items</button>
+          }
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:11,opacity:.65,marginBottom:2,color:"white"}}>{now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</div>
+            <div style={{fontSize:19,fontFamily:"monospace",fontWeight:700,letterSpacing:1,color:"white"}}>{now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</div>
+          </div>
         </div>
       </div>
 
+      {/* Manage Mode Banner */}
+      {manageMode && (
+        <div style={{background:"#edf4e4",borderBottom:"2px solid #ccddaf",padding:"10px 24px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:16}}>✏️</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#3d6645"}}>Manage Mode Active</span>
+          <span style={{fontSize:12,color:"#6b8a6e",marginLeft:4}}>— Add new items below, or tap the trash icon to remove an item.</span>
+        </div>
+      )}
+
       {/* Stats bar */}
-      <div style={{background:"white",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #e8e4de",flexWrap:"wrap",gap:12}}>
+      <div style={{background:"white",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #e4e0da",flexWrap:"wrap",gap:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:18}}>👤</span>
           <input value={checkedBy} onChange={e=>setCheckedBy(e.target.value)} placeholder="Your name (optional)"
-            style={{border:"1px solid #ddd",borderRadius:8,padding:"6px 12px",fontSize:14,outline:"none",minWidth:200,fontFamily:"Georgia,serif"}} />
+            style={{border:"1px solid #ccddaf",borderRadius:8,padding:"6px 12px",fontSize:14,outline:"none",minWidth:200,fontFamily:"Georgia,serif",color:"#343434"}} />
         </div>
         <div style={{display:"flex",gap:10}}>
-          {[["Total",MEDICATIONS.length,"#1a1a1a","#f0f0f0"],
-            ["Low",lowCount,lowCount>0?"#ff4d6d":"#22c55e",lowCount>0?"#fff0f3":"#f0fdf4"],
-            ["OK",MEDICATIONS.length-lowCount,"#1a1a1a","#f0f0f0"]
+          {[["Total",medications.length,"#343434","#f8f6f2"],
+            ["Low",lowCount,lowCount>0?"#e05070":"#6b9071",lowCount>0?"#fff0f3":"#edf4e4"],
+            ["OK",medications.length-lowCount,"#343434","#f8f6f2"]
           ].map(([l,v,c,bg]) => (
-            <div key={l} style={{background:bg,borderRadius:10,padding:"6px 16px",textAlign:"center",minWidth:56}}>
+            <div key={l} style={{background:bg,borderRadius:10,padding:"6px 16px",textAlign:"center",minWidth:56,border:"1px solid #e4e0da"}}>
               <div style={{fontSize:22,fontWeight:800,lineHeight:1.1,color:c}}>{v}</div>
               <div style={{fontSize:10,color:"#888",textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
             </div>
@@ -226,24 +327,47 @@ function App() {
       </div>
 
       {/* Search & Filter */}
-      <div style={{padding:"14px 24px",background:"#fdfcfa",borderBottom:"1px solid #e8e4de"}}>
-        <div style={{display:"flex",alignItems:"center",background:"white",border:"1px solid #ddd",borderRadius:10,padding:"6px 14px",marginBottom:10}}>
+      <div style={{padding:"14px 24px",background:"#fdfcfa",borderBottom:"1px solid #e4e0da"}}>
+        <div style={{display:"flex",alignItems:"center",background:"white",border:"1px solid #ccddaf",borderRadius:10,padding:"6px 14px",marginBottom:10}}>
           <span style={{marginRight:8}}>🔍</span>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search medications..."
-            style={{border:"none",outline:"none",fontSize:14,width:"100%",background:"transparent",fontFamily:"Georgia,serif"}} />
+            style={{border:"none",outline:"none",fontSize:14,width:"100%",background:"transparent",fontFamily:"Georgia,serif",color:"#343434"}} />
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {CATEGORIES.map(cat => (
             <button key={cat} onClick={()=>setFilter(cat)} style={{
               padding:"5px 16px",borderRadius:20,fontFamily:"Georgia,serif",
-              border:"1px solid "+(filter===cat?"#1a3a5c":"#ddd"),
-              background:filter===cat?"#1a3a5c":"white",
+              border:"1px solid "+(filter===cat?"#6b9071":"#ccddaf"),
+              background:filter===cat?"#6b9071":"white",
               color:filter===cat?"white":"#555",
               fontSize:13,cursor:"pointer",fontWeight:filter===cat?600:400
             }}>{cat}</button>
           ))}
         </div>
       </div>
+
+      {/* Add Item Form (Manage Mode only) */}
+      {manageMode && (
+        <div style={{margin:"16px 24px 0",background:"white",border:"2px dashed #ccddaf",borderRadius:14,padding:"16px 18px"}}>
+          <p style={{fontSize:13,fontWeight:700,color:"#3d6645",marginBottom:12}}>➕ Add New Item</p>
+          {addError && <div style={{background:"#fff0f3",border:"1px solid #ffc2cc",color:"#c9184a",borderRadius:8,padding:"7px 12px",marginBottom:10,fontSize:12}}>⚠ {addError}</div>}
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <input value={newName} onChange={e=>{setNewName(e.target.value);setAddError("");}} placeholder="Medication name *"
+              style={{flex:"2 1 180px",border:"1px solid #ccddaf",borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",fontFamily:"Georgia,serif",color:"#343434"}} />
+            <input value={newMin} onChange={e=>{setNewMin(e.target.value);setAddError("");}} placeholder="Min qty (e.g. 2 Bottles) *"
+              style={{flex:"1 1 140px",border:"1px solid #ccddaf",borderRadius:8,padding:"8px 12px",fontSize:13,outline:"none",fontFamily:"Georgia,serif",color:"#343434"}} />
+            <select value={newCategory} onChange={e=>setNewCategory(e.target.value)}
+              style={{flex:"0 1 110px",border:"1px solid #ccddaf",borderRadius:8,padding:"8px 10px",fontSize:13,outline:"none",color:"#343434",background:"white",cursor:"pointer"}}>
+              <option value="Rx">Rx</option>
+              <option value="OTC">OTC</option>
+              <option value="Topical">Topical</option>
+            </select>
+            <button onClick={addItem} style={{flex:"0 1 auto",background:"#6b9071",color:"white",border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif",whiteSpace:"nowrap"}}>
+              Add Item
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Medication list */}
       <div style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:8}}>
@@ -254,33 +378,46 @@ function App() {
           return (
             <div key={med.name} style={{
               background:isLow?"#fff8f8":"white",borderRadius:12,padding:"14px 16px",
-              border:"1px solid "+(isLow?"#ffc2cc":"#e8e4de"),
-              borderLeft:"4px solid "+(isLow?"#ff4d6d":colors.border),
-              boxShadow:isLow?"0 2px 8px rgba(255,77,109,.10)":"0 1px 3px rgba(0,0,0,.04)"
+              border:"1px solid "+(isLow?"#ffc2cc":"#e4e0da"),
+              borderLeft:"4px solid "+(isLow?"#e05070":colors.border),
+              boxShadow:isLow?"0 2px 8px rgba(224,80,112,.08)":"0 1px 3px rgba(0,0,0,.04)"
             }}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
+                {/* Low toggle */}
                 <button onClick={()=>toggleLow(med.name)} style={{
                   width:28,height:28,borderRadius:8,
-                  border:"2px solid "+(isLow?"#ff4d6d":"#ddd"),
-                  background:isLow?"#ff4d6d":"white",color:isLow?"white":"#ff4d6d",
+                  border:"2px solid "+(isLow?"#e05070":"#ccddaf"),
+                  background:isLow?"#e05070":"white",color:isLow?"white":"#e05070",
                   cursor:"pointer",fontSize:14,fontWeight:700,
                   display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0
                 }}>{isLow?"✕":""}</button>
+
                 <div style={{flex:1}}>
-                  <div style={{fontSize:15,fontWeight:600,color:"#1a1a1a",marginBottom:4}}>{med.name}</div>
+                  <div style={{fontSize:15,fontWeight:600,color:"#343434",marginBottom:4}}>{med.name}</div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,fontWeight:600,fontFamily:"monospace",
                       background:colors.bg,color:colors.text,border:"1px solid "+colors.border}}>{med.category}</span>
                     <span style={{fontSize:12,color:"#777"}}>Min: <strong>{med.min}</strong></span>
                   </div>
                 </div>
-                {isLow && <span style={{background:"#ff4d6d",color:"white",fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:1,flexShrink:0}}>LOW</span>}
+
+                {isLow && <span style={{background:"#e05070",color:"white",fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:1,flexShrink:0}}>LOW</span>}
+
+                {/* Remove button (manage mode only) */}
+                {manageMode && (
+                  <button onClick={()=>removeItem(med.name)} title="Remove item" style={{
+                    width:30,height:30,borderRadius:8,border:"1px solid #ffc2cc",
+                    background:"#fff0f3",color:"#e05070",fontSize:15,cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+                    marginLeft:4
+                  }}>🗑</button>
+                )}
               </div>
               {isLow && (
                 <div style={{marginTop:10,paddingLeft:40}}>
                   <input value={notes[med.name]||""} onChange={e=>setNotes(p=>({...p,[med.name]:e.target.value}))}
                     placeholder="Add a note (optional)..."
-                    style={{width:"calc(100% - 16px)",border:"1px solid #ffc2cc",borderRadius:8,padding:"6px 10px",
+                    style={{width:"calc(100% - 16px)",border:"1px solid #ccddaf",borderRadius:8,padding:"6px 10px",
                       fontSize:13,outline:"none",background:"#fff8f8",color:"#555",fontFamily:"Georgia,serif"}} />
                 </div>
               )}
@@ -290,24 +427,24 @@ function App() {
       </div>
 
       {/* Submit bar */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:"1px solid #e8e4de",
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:"1px solid #e4e0da",
         padding:"12px 24px",boxShadow:"0 -4px 20px rgba(0,0,0,0.08)",zIndex:100}}>
         {error && <div style={{background:"#fff0f3",border:"1px solid #ffc2cc",color:"#c9184a",borderRadius:8,padding:"8px 14px",marginBottom:10,fontSize:13}}>⚠ {error}</div>}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div style={{fontSize:14}}>
             {lowCount>0
-              ? <span style={{color:"#ff4d6d",fontWeight:600}}>⚠ {lowCount} item{lowCount!==1?"s":""} marked low</span>
-              : <span style={{color:"#22c55e",fontWeight:600}}>✓ No low items marked</span>}
+              ? <span style={{color:"#e05070",fontWeight:600}}>⚠ {lowCount} item{lowCount!==1?"s":""} marked low</span>
+              : <span style={{color:"#6b9071",fontWeight:600}}>✓ No low items marked</span>}
           </div>
-          <button onClick={handleSubmit} disabled={submitting} style={{
-            background:"linear-gradient(135deg,#1a3a5c,#0f2540)",color:"white",border:"none",
+          <button onClick={handleSubmit} disabled={submitting||manageMode} style={{
+            background:manageMode?"#aaa":"#343434",color:"white",border:"none",
             borderRadius:10,padding:"11px 26px",fontSize:15,fontWeight:700,fontFamily:"Georgia,serif",
-            cursor:submitting?"not-allowed":"pointer",opacity:submitting?0.65:1,
-            boxShadow:"0 3px 12px rgba(26,58,92,.35)",display:"flex",alignItems:"center",gap:8
+            cursor:(submitting||manageMode)?"not-allowed":"pointer",opacity:(submitting||manageMode)?0.65:1,
+            boxShadow:"0 3px 12px rgba(52,52,52,.25)",display:"flex",alignItems:"center",gap:8
           }}>
             {submitting
               ? <><span style={{display:"inline-block",width:15,height:15,border:"2px solid rgba(255,255,255,.35)",borderTopColor:"white",borderRadius:"50%",animation:"spin .7s linear infinite"}} /> Sending…</>
-              : "📧 Submit & Notify"}
+              : manageMode ? "Exit Manage Mode to Submit" : "📧 Submit & Notify"}
           </button>
         </div>
       </div>
