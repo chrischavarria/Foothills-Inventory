@@ -115,10 +115,12 @@ function App() {
 
   const toggleLow = (name) => setLowItems(p => ({ ...p, [name]: !p[name] }));
   const lowCount  = Object.values(lowItems).filter(Boolean).length;
-  const filtered  = medications.filter(m =>
-    (filter === "All" || m.category === filter) &&
-    m.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered  = medications
+    .filter(m =>
+      (filter === "All" || m.category === filter) &&
+      m.name.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   /* ── PIN VERIFY ── */
   const verifyPin = () => {
